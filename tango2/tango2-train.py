@@ -592,27 +592,27 @@ def main():
             if completed_steps >= args.max_train_steps:
                 break
 
-        model.eval()
-        model.uncondition = False
+        # model.eval()
+        # model.uncondition = False
 
-        eval_progress_bar = tqdm(range(len(eval_dataloader)), disable=not accelerator.is_local_main_process)
-        for step, batch in enumerate(eval_dataloader):
-            with accelerator.accumulate(model) and torch.no_grad():
-                # device = model.device
-                device = "cuda:0" if torch.cuda.is_available() else "cpu"
-                text, audios, _ = batch
-                target_length = int(duration * 102.4)
+        # eval_progress_bar = tqdm(range(len(eval_dataloader)), disable=not accelerator.is_local_main_process)
+        # for step, batch in enumerate(eval_dataloader):
+        #     with accelerator.accumulate(model) and torch.no_grad():
+        #         # device = model.device
+        #         device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        #         text, audios, _ = batch
+        #         target_length = int(duration * 102.4)
 
-                unwrapped_vae = accelerator.unwrap_model(vae)
-                mel, _, waveform = torch_tools.wav_to_fbank(audios, target_length, stft)
-                mel = mel.unsqueeze(1).to(device)
-                true_latent = unwrapped_vae.get_first_stage_encoding(unwrapped_vae.encode_first_stage(mel))
+        #         unwrapped_vae = accelerator.unwrap_model(vae)
+        #         mel, _, waveform = torch_tools.wav_to_fbank(audios, target_length, stft)
+        #         mel = mel.unsqueeze(1).to(device)
+        #         true_latent = unwrapped_vae.get_first_stage_encoding(unwrapped_vae.encode_first_stage(mel))
 
-                val_loss = accelerator.unwrap_model(model).diffusion_forward(true_latent, text, validation_mode=True)
-                total_val_loss += val_loss.detach().float()
-                eval_progress_bar.update(1)
+        #         val_loss = accelerator.unwrap_model(model).diffusion_forward(true_latent, text, validation_mode=True)
+        #         total_val_loss += val_loss.detach().float()
+        #         eval_progress_bar.update(1)
 
-        model.uncondition = args.uncondition
+        # model.uncondition = args.uncondition
 
         if accelerator.is_main_process:    
             result = {}
