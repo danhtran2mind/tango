@@ -19,7 +19,7 @@ progressbar33==2.4
 protobuf==3.20.3
 resampy==0.4.3
 scikit_image
-scikit_lear
+scikit_learn
 scipy==1.14.0
 soundfile==0.12.1
 ssr_eval==0.0.7
