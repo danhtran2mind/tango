@@ -236,9 +236,12 @@ def main():
     if args.augment and args.per_device_train_batch_size < 2:
         raise ValueError("Augmentation requires per device train batch size of at least 2.")
 
+    accelerator_log_kwargs = {}
     if args.with_tracking:
         accelerator_log_kwargs["log_with"] = args.report_to
-        accelerator_log_kwargs["logging_dir"] = args.output_dir
+        # Remove logging_dir, as it’s not supported
+        # Optionally, set project_dir for logging
+        accelerator_log_kwargs["project_dir"] = args.output_dir
 
     accelerator = Accelerator(gradient_accumulation_steps=args.gradient_accumulation_steps, **accelerator_log_kwargs)
     
@@ -270,14 +273,15 @@ def main():
             
         elif args.output_dir is not None:
             os.makedirs(args.output_dir, exist_ok=True)
-
+    
         os.makedirs("{}/{}".format(args.output_dir, "outputs"), exist_ok=True)
         with open("{}/summary.jsonl".format(args.output_dir), "a") as f:
             f.write(json.dumps(dict(vars(args))) + "\n\n")
-
+    
         accelerator.project_configuration.automatic_checkpoint_naming = False
-
-        wandb.init(project="Text to Audio Diffusion")
+    
+        if args.with_tracking and args.report_to == "wandb":
+            wandb.init(project="Text to Audio Diffusion with DPO")  # Only init W&B if explicitly requested
 
     accelerator.wait_for_everyone()
 
