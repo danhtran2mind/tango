@@ -305,8 +305,8 @@ def main():
         accelerator_log_kwargs["log_with"] = args.report_to
         # Remove logging_dir, as it’s not supported
         # Optionally, set project_dir for logging
-        accelerator_log_kwargs["project_dir"] = args.output_dir
-
+        accelerator_log_kwargs["project_dir"] = args.logging_dir if args.logging_dir is not None else args.output_dir
+        
     accelerator = Accelerator(gradient_accumulation_steps=args.gradient_accumulation_steps, **accelerator_log_kwargs)
     
     # Make one log on every process with the configuration for debugging.
