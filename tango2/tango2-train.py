@@ -38,6 +38,11 @@ def parse_args():
         "--train_file", type=str, default="data/train_audiocaps.json",
         help="A csv or a json file containing the training data."
     )
+
+    parser.add_argument(
+        "--logging_dir", type=str, default=None,
+        help="Directory for logging when using tensorboard."
+    )
     parser.add_argument(
         "--validation_file", type=str, default="data/valid_audiocaps.json",
         help="A csv or a json file containing the validation data."
@@ -298,8 +303,8 @@ def main():
     accelerator_log_kwargs = {}
     if args.with_tracking:
         accelerator_log_kwargs["log_with"] = args.report_to
-        # if args.report_to == "tensorboard":
-        #     accelerator_log_kwargs["logging_dir"] = os.path.join(args.output_dir, "logs")
+        if args.report_to == "tensorboard":
+            accelerator_log_kwargs["logging_dir"] = args.logging_dir if args.logging_dir else os.path.join(args.output_dir, "logs")
 
     accelerator = Accelerator(gradient_accumulation_steps=args.gradient_accumulation_steps, **accelerator_log_kwargs)
     
