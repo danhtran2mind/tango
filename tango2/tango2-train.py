@@ -303,8 +303,9 @@ def main():
     accelerator_log_kwargs = {}
     if args.with_tracking:
         accelerator_log_kwargs["log_with"] = args.report_to
-        if args.report_to == "tensorboard":
-            accelerator_log_kwargs["logging_dir"] = args.logging_dir if args.logging_dir else os.path.join(args.output_dir, "logs")
+        # Remove logging_dir, as it’s not supported
+        # Optionally, set project_dir for logging
+        accelerator_log_kwargs["project_dir"] = args.output_dir
 
     accelerator = Accelerator(gradient_accumulation_steps=args.gradient_accumulation_steps, **accelerator_log_kwargs)
     
