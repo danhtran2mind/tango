@@ -33,6 +33,39 @@ except ImportError:
 
 logger = get_logger(__name__)
 
+
+class DPOText2AudioDataset(Dataset):
+    def __init__(self, dataset, prefix, text_column, audio_w_column, audio_l_column, num_examples=-1):
+
+        inputs = list(dataset[text_column])
+        self.inputs = [prefix + inp for inp in inputs]
+        self.audios_w = list(dataset[audio_w_column])
+        self.audios_l = list(dataset[audio_l_column])
+        self.indices = list(range(len(self.inputs)))
+
+        self.mapper = {}
+        for index, audio_w, audio_l, text in zip(self.indices, self.audios_w,self.audios_l,inputs):
+            self.mapper[index] = [audio_w, audio_l, text]
+
+        if num_examples != -1:
+            self.inputs, self.audios_w, self.audios_l = self.inputs[:num_examples], self.audios_w[:num_examples], self.audios_l[:num_examples]
+            self.indices = self.indices[:num_examples]
+
+    def __len__(self):
+        return len(self.inputs)
+
+    def get_num_instances(self):
+        return len(self.inputs)
+
+    def __getitem__(self, index):
+        s1, s2, s3, s4 = self.inputs[index], self.audios_w[index], self.audios_l[index],self.indices[index]
+        return s1, s2, s3, s4
+
+    def collate_fn(self, data):
+        dat = pd.DataFrame(data)
+        return [dat[i].tolist() for i in dat]
+        
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Finetune a diffusion model for text to audio generation task.")
     parser.add_argument(
