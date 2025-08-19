@@ -201,9 +201,12 @@ def parse_args():
     )
     parser.add_argument(
         "--max_train_steps", type=int, default=None,
-        help="Total number of training steps to perform. If provided, overrides num_train_epochs."
+        help="Total number of training steps to perform. If provided, overrides num_train_epochs. Alias: --num_iters."
     )
-    
+    parser.add_argument(
+        "--num_iters", type=int, default=None,
+        help="Alias for --max_train_steps. Total number of training steps to perform. If provided, overrides num_train_epochs."
+    )
     parser.add_argument(
         "--gradient_accumulation_steps", type=int, default=4,
         help="Number of updates steps to accumulate before performing a backward/update pass."
@@ -302,6 +305,10 @@ def parse_args():
         if bnb is None:
             raise ValueError("The 'bitsandbytes' library is required for 8-bit Adam optimizer but is not installed.")
 
+    # Handle alias for max_train_steps and num_iters
+    if args.num_iters is not None:
+        args.max_train_steps = args.num_iters
+
     return args
 
 def main():
@@ -310,7 +317,9 @@ def main():
     accelerator_log_kwargs = {}
     if args.with_tracking:
         accelerator_log_kwargs["log_with"] = args.report_to
-        accelerator_log_kwargs["project_dir"] = args.output_dir
+        # Use logging_dir for TensorBoard, fallback to output_dir if not specified
+        accelerator_log_kwargs["project_dir"] = args.logging_dir if args.logging_dir is not None else args.output_dir
+        # accelerator_log_kwargs["logging_dir"] = args.logging_dir  # Explicitly set logging_dir for TensorBoard
 
     accelerator = Accelerator(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
@@ -498,7 +507,7 @@ def main():
 
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
     if overrode_max_train_steps:
-        args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
+        args.max_train_epochs = args.num_train_epochs * num_update_steps_per_epoch
     args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
 
     checkpointing_steps = args.checkpointing_steps
