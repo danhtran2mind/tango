@@ -327,6 +327,7 @@ def main():
     # If passed along, set the training seed now.
     if args.seed is not None:
         set_seed(args.seed)
+
     # Handle output directory creation and wandb tracking
     if accelerator.is_main_process:
         if args.output_dir is None or args.output_dir == "":
@@ -339,14 +340,15 @@ def main():
             
         elif args.output_dir is not None:
             os.makedirs(args.output_dir, exist_ok=True)
-
+    
         os.makedirs("{}/{}".format(args.output_dir, "outputs"), exist_ok=True)
         with open("{}/summary.jsonl".format(args.output_dir), "a") as f:
             f.write(json.dumps(dict(vars(args))) + "\n\n")
-
+    
         accelerator.project_configuration.automatic_checkpoint_naming = False
-
-        wandb.init(project="Text to Audio Diffusion with DPO")
+    
+        if args.with_tracking and args.report_to == "wandb":
+            wandb.init(project="Text to Audio Diffusion with DPO")  # Only init W&B if explicitly requested
         
         
         logger.info(f"***** Writing audio file to {dataset_dir}/audio_alpaca *****")
