@@ -619,25 +619,26 @@ def main():
             result["epoch"] = epoch + 1
             result["step"] = completed_steps
             result["train_loss"] = round(total_loss.item() / len(train_dataloader), 4)
-            result["val_loss"] = round(total_val_loss.item() / len(eval_dataloader), 4)
+            # result["val_loss"] = round(total_val_loss.item() / len(eval_dataloader), 4)
             
             sft_epochs -= 1
             wandb.log(result)
 
-            result_string = "Epoch: {}, Loss Train: {}, Val: {}\n".format(epoch, result["train_loss"], result["val_loss"])
+            # result_string = "Epoch: {}, Loss Train: {}, Val: {}\n".format(epoch, result["train_loss"], result["val_loss"])
+            result_string = f"Epoch: {epoch}, Loss Train: {result['train_loss']}" #, Val: {result['val_loss']}\n"
             accelerator.print(result_string)
 
             with open("{}/summary.jsonl".format(args.output_dir), "a") as f:
                 f.write(json.dumps(result) + "\n\n")
 
             logger.info(result)
-
-            if result["val_loss"] < best_loss:
-                best_loss = result["val_loss"]
-                save_checkpoint = True
-            else:
-                save_checkpoint = False
-    
+            
+            # if result["val_loss"] < best_loss:
+            #     best_loss = result["val_loss"]
+            #     save_checkpoint = True
+            # else:
+            #     save_checkpoint = False
+            save_checkpoint = True
         if args.with_tracking:
             accelerator.log(result, step=completed_steps)
 
