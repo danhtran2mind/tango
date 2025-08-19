@@ -598,7 +598,8 @@ def main():
         eval_progress_bar = tqdm(range(len(eval_dataloader)), disable=not accelerator.is_local_main_process)
         for step, batch in enumerate(eval_dataloader):
             with accelerator.accumulate(model) and torch.no_grad():
-                device = model.device
+                # device = model.device
+                device = "cuda:0" if torch.cuda.is_available() else "cpu"
                 text, audios, _ = batch
                 target_length = int(duration * 102.4)
 
