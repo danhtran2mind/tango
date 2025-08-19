@@ -1,6 +1,7 @@
 torch==2.4.0
 torchaudio==2.4.0
 torchvision==0.19.0
+huggingface-hub==0.28.0
 transformers==4.45.0
 accelerate==1.6.0
 datasets==3.5.0
