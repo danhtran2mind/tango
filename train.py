@@ -439,6 +439,7 @@ def main():
 
             with accelerator.accumulate(model):
                 device = model.device
+                device = "cuda:0" if torch.cuda.is_available() "cpu"
                 text, audios, _ = batch
                 target_length = int(duration * 102.4)
 
