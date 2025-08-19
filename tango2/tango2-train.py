@@ -298,8 +298,8 @@ def main():
     accelerator_log_kwargs = {}
     if args.with_tracking:
         accelerator_log_kwargs["log_with"] = args.report_to
-        if args.report_to == "tensorboard":
-            accelerator_log_kwargs["logging_dir"] = os.path.join(args.output_dir, "logs")
+        # if args.report_to == "tensorboard":
+        #     accelerator_log_kwargs["logging_dir"] = os.path.join(args.output_dir, "logs")
 
     accelerator = Accelerator(gradient_accumulation_steps=args.gradient_accumulation_steps, **accelerator_log_kwargs)
     
