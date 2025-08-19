@@ -33,6 +33,35 @@ except ImportError:
 
 logger = get_logger(__name__)
 
+class Text2AudioDataset(Dataset):
+    def __init__(self, dataset, prefix, text_column, audio_column, num_examples=-1):
+
+        inputs = list(dataset[text_column])
+        self.inputs = [prefix + inp for inp in inputs]
+        self.audios = list(dataset[audio_column])
+        self.indices = list(range(len(self.inputs)))
+
+        self.mapper = {}
+        for index, audio, text in zip(self.indices, self.audios, inputs):
+            self.mapper[index] = [audio, text]
+
+        if num_examples != -1:
+            self.inputs, self.audios = self.inputs[:num_examples], self.audios[:num_examples]
+            self.indices = self.indices[:num_examples]
+
+    def __len__(self):
+        return len(self.inputs)
+
+    def get_num_instances(self):
+        return len(self.inputs)
+
+    def __getitem__(self, index):
+        s1, s2, s3 = self.inputs[index], self.audios[index], self.indices[index]
+        return s1, s2, s3
+
+    def collate_fn(self, data):
+        dat = pd.DataFrame(data)
+        return [dat[i].tolist() for i in dat]
 
 class DPOText2AudioDataset(Dataset):
     def __init__(self, dataset, prefix, text_column, audio_w_column, audio_l_column, num_examples=-1):
