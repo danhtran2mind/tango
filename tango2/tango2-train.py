@@ -622,7 +622,7 @@ def main():
             # result["val_loss"] = round(total_val_loss.item() / len(eval_dataloader), 4)
             
             sft_epochs -= 1
-            wandb.log(result)
+            # wandb.log(result)
 
             # result_string = "Epoch: {}, Loss Train: {}, Val: {}\n".format(epoch, result["train_loss"], result["val_loss"])
             result_string = f"Epoch: {epoch}, Loss Train: {result['train_loss']}" #, Val: {result['val_loss']}\n"
