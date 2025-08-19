@@ -201,12 +201,9 @@ def parse_args():
     )
     parser.add_argument(
         "--max_train_steps", type=int, default=None,
-        help="Total number of training steps to perform. If provided, overrides num_train_epochs. Alias: --num_iters."
+        help="Total number of training steps to perform. If provided, overrides num_train_epochs."
     )
-    parser.add_argument(
-        "--num_iters", type=int, default=None,
-        help="Alias for --max_train_steps. Total number of training steps to perform. If provided, overrides num_train_epochs."
-    )
+    
     parser.add_argument(
         "--gradient_accumulation_steps", type=int, default=4,
         help="Number of updates steps to accumulate before performing a backward/update pass."
@@ -304,10 +301,6 @@ def parse_args():
     if args.optimizer == "adam8bit" or args.adam_8bit:
         if bnb is None:
             raise ValueError("The 'bitsandbytes' library is required for 8-bit Adam optimizer but is not installed.")
-
-    # Handle alias for max_train_steps and num_iters
-    if args.num_iters is not None:
-        args.max_train_steps = args.num_iters
 
     return args
 
