@@ -290,13 +290,14 @@ class DPOText2AudioDataset(Dataset):
 
 def main():
     args = parse_args()
+    
+    # accelerator_log_kwargs = {}
+    # if args.with_tracking:
+    #     accelerator_log_kwargs["log_with"] = args.report_to
+    #     accelerator_log_kwargs["logging_dir"] = args.output_dir
     accelerator_log_kwargs = {}
-
-  
-
     if args.with_tracking:
         accelerator_log_kwargs["log_with"] = args.report_to
-        accelerator_log_kwargs["logging_dir"] = args.output_dir
 
     accelerator = Accelerator(gradient_accumulation_steps=args.gradient_accumulation_steps, **accelerator_log_kwargs)
     
