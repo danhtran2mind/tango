@@ -637,7 +637,7 @@ def main():
                     latents = torch.cat((latent_w, latent_l), dim=0)
                     val_loss = model(latents, text, ref_unet, validation_mode=False, sft=False)
     
-                total_loss += loss.detach().float()
+                total_val_loss += val_loss.detach().float()
                 ########################
                 # text, audios, _ = batch
                 # target_length = int(duration * 102.4)
