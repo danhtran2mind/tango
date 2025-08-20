@@ -662,8 +662,6 @@ def main():
             result["val_loss"] = round(total_val_loss.item() / len(eval_dataloader), 4)
             
             sft_epochs -= 1
-            # wandb.log(result)
-
             result_string = "Epoch: {}, Loss Train: {}, Val: {}\n".format(epoch, result["train_loss"], result["val_loss"])
 
             accelerator.print(result_string)
@@ -673,15 +671,49 @@ def main():
 
             logger.info(result)
             
-            if result["val_loss"] < best_loss:
+            save_checkpoint = result["val_loss"] < best_loss
+            if save_checkpoint:
                 best_loss = result["val_loss"]
-                save_checkpoint = True
-            else:
-                save_checkpoint = False
-            save_checkpoint = True
+
+            if save_checkpoint and args.checkpointing_steps == "best":
+                output_path = os.path.join(args.output_dir, "best.pt")
+                torch.save({
+                    "model_state_dict": accelerator.unwrap_model(model).state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "lr_scheduler_state_dict": lr_scheduler.state_dict(),
+                    "epoch": epoch + 1,
+                    "step": completed_steps,
+                    "best_loss": best_loss
+                }, output_path)
+                accelerator.print(f"Saved best checkpoint at {output_path}")
+
+            if (epoch + 1) % args.save_every == 0 and sft_epochs < 0 and args.checkpointing_steps == "best":
+                output_path = os.path.join(args.output_dir, f"epoch_{epoch + 1}.pt")
+                torch.save({
+                    "model_state_dict": accelerator.unwrap_model(model).state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "lr_scheduler_state_dict": lr_scheduler.state_dict(),
+                    "epoch": epoch + 1,
+                    "step": completed_steps,
+                    "best_loss": best_loss
+                }, output_path)
+                accelerator.print(f"Saved epoch checkpoint at {output_path}")
+
+            if args.checkpointing_steps == "epoch" and sft_epochs < 0:
+                output_path = os.path.join(args.output_dir, f"epoch_{epoch + 1}.pt")
+                torch.save({
+                    "model_state_dict": accelerator.unwrap_model(model).state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "lr_scheduler_state_dict": lr_scheduler.state_dict(),
+                    "epoch": epoch + 1,
+                    "step": completed_steps,
+                    "best_loss": best_loss
+                }, output_path)
+                accelerator.print(f"Saved epoch checkpoint at {output_path}")
+
         if args.with_tracking:
             accelerator.log(result, step=completed_steps)
-
+            
         accelerator.wait_for_everyone()
         
         if accelerator.is_main_process and args.checkpointing_steps == "best":
