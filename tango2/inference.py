@@ -19,8 +19,9 @@ from tools.torch_tools import read_wav_file
 from tango import Tango
 import numpy as np
 import librosa
+print("4")
 import laion_clap
-
+print("5")
 
 def clap_score_computation(wav_output_dir,text_prompts):
     
