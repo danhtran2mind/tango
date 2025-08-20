@@ -172,22 +172,26 @@ def main():
     for j, wav in enumerate(all_outputs):
         sf.write("{}/output_{}.wav".format(output_dir, j), wav, samplerate=16000)
     
-    clap_score = clap_score_computation(output_dir,text_prompts)
+    # clap_score = clap_score_computation(output_dir, text_prompts)
     
 
     result = evaluator.main(output_dir, args.test_references)
     result["Steps"] = num_steps
     result["Guidance Scale"] = guidance
     result["Test Instances"] = len(text_prompts)
-    result["Clap Score"] =  np.round(clap_score,2)
+    # result["Clap Score"] =  np.round(clap_score,2)
     wandb.log(result)
     
     result["scheduler_config"] = dict(scheduler.config)
     result["args"] = dict(vars(args))
     result["output_dir"] = output_dir
-
+    
     with open("outputs/summary.jsonl", "a") as f:
         f.write(json.dumps(result) + "\n\n")
+
+    with open("ckpts/summary.jsonl", "a") as f:
+        f.write(json.dumps(result) + "\n\n")
+        
             
     
         
