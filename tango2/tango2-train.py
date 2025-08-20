@@ -617,16 +617,39 @@ def main():
             with accelerator.accumulate(model) and torch.no_grad():
                 # device = model.device
                 device = "cuda:0" if torch.cuda.is_available() else "cpu"
-                text, audios, _ = batch
+                ########################
+                text, audio_w, audio_l, _ = batch
                 target_length = int(duration * 102.4)
 
-                unwrapped_vae = accelerator.unwrap_model(vae)
-                mel, _, waveform = torch_tools.wav_to_fbank(audios, target_length, stft)
-                mel = mel.unsqueeze(1).to(device)
-                true_latent = unwrapped_vae.get_first_stage_encoding(unwrapped_vae.encode_first_stage(mel))
+                with torch.no_grad():
+                    unwrapped_vae = accelerator.unwrap_model(vae)
+                    mel_w, _, waveform_w = torch_tools.wav_to_fbank(audio_w, target_length, stft)
+                    mel_l, _, waveform_l = torch_tools.wav_to_fbank(audio_l, target_length, stft)
+                    mel_w = mel_w.unsqueeze(1).to(device)
+                    mel_l = mel_l.unsqueeze(1).to(device)
+                    latent_w = unwrapped_vae.get_first_stage_encoding(unwrapped_vae.encode_first_stage(mel_w))
+                    latent_l = unwrapped_vae.get_first_stage_encoding(unwrapped_vae.encode_first_stage(mel_l))
+                    
+                if sft_epochs > 0: 
+                    latents = latent_w
+                    val_loss = model(latents, text, ref_unet, validation_mode=False, sft=True)
+                else:
+                    latents = torch.cat((latent_w, latent_l), dim=0)
+                    val_loss = model(latents, text, ref_unet, validation_mode=False, sft=False)
+    
+                total_loss += loss.detach().float()
+                ########################
+                # text, audios, _ = batch
+                # target_length = int(duration * 102.4)
 
-                val_loss = accelerator.unwrap_model(model).diffusion_forward(true_latent, text, validation_mode=True)
-                total_val_loss += val_loss.detach().float()
+                # unwrapped_vae = accelerator.unwrap_model(vae)
+                # mel, _, waveform = torch_tools.wav_to_fbank(audios, target_length, stft)
+                # mel = mel.unsqueeze(1).to(device)
+                # true_latent = unwrapped_vae.get_first_stage_encoding(unwrapped_vae.encode_first_stage(mel))
+
+                # val_loss = accelerator.unwrap_model(model).diffusion_forward(true_latent, text, validation_mode=True)
+                # total_val_loss += val_loss.detach().float()
+                ######################3
                 eval_progress_bar.update(1)
 
         model.uncondition = args.uncondition
