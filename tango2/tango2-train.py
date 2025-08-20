@@ -395,7 +395,22 @@ def main():
         'chosen': chosen_audio_path,
         'rejected': rejected_audio_path
     }))
+    ######################################
+    from datasets import DatasetDict
+
+    # Split the train dataset into train and validation
+    train_val_split = raw_dataset_train.train_test_split(
+        test_size=0.1,  # 10% for validation
+        seed=42
+    )
     
+    # Combine all datasets
+    dataset = DatasetDict({
+        'train': train_val_split['train'],
+        'validation': train_val_split['test'],
+        'test': raw_dataset_valid_test['test'] if 'test' in raw_dataset_valid_test else train_val_split['test']
+    })
+    ##################################3
     pretrained_model_name = "audioldm-s-full"
     vae, stft = build_pretrained_models(pretrained_model_name)
     vae.eval()
@@ -417,8 +432,10 @@ def main():
         prefix = ""
         
     with accelerator.main_process_first():
-        train_dataset = DPOText2AudioDataset(raw_dataset_train, prefix, 'prompt', 'chosen', 'rejected', args.num_examples)
-        eval_dataset = Text2AudioDataset(raw_dataset_valid_test["validation"], prefix, text_column, audio_column, args.num_examples)
+        # train_dataset = DPOText2AudioDataset(raw_dataset_train, prefix, 'prompt', 'chosen', 'rejected', args.num_examples)
+        train_dataset = DPOText2AudioDataset(dataset["train"] , prefix, 'prompt', 'chosen', 'rejected', args.num_examples)
+        # eval_dataset = Text2AudioDataset(raw_dataset_valid_test["validation"], prefix, text_column, audio_column, args.num_examples)
+        eval_dataset = Text2AudioDataset(dataset ["validation"], prefix, 'prompt', 'chosen', 'rejected', args.num_examples)
         test_dataset = Text2AudioDataset(raw_dataset_valid_test["test"], prefix, text_column, audio_column, args.num_examples)
 
     accelerator.print("Num instances in train: {}, validation: {}, test: {}".format(
@@ -592,40 +609,40 @@ def main():
             if completed_steps >= args.max_train_steps:
                 break
 
-        # model.eval()
-        # model.uncondition = False
+        model.eval()
+        model.uncondition = False
 
-        # eval_progress_bar = tqdm(range(len(eval_dataloader)), disable=not accelerator.is_local_main_process)
-        # for step, batch in enumerate(eval_dataloader):
-        #     with accelerator.accumulate(model) and torch.no_grad():
-        #         # device = model.device
-        #         device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        #         text, audios, _ = batch
-        #         target_length = int(duration * 102.4)
+        eval_progress_bar = tqdm(range(len(eval_dataloader)), disable=not accelerator.is_local_main_process)
+        for step, batch in enumerate(eval_dataloader):
+            with accelerator.accumulate(model) and torch.no_grad():
+                # device = model.device
+                device = "cuda:0" if torch.cuda.is_available() else "cpu"
+                text, audios, _ = batch
+                target_length = int(duration * 102.4)
 
-        #         unwrapped_vae = accelerator.unwrap_model(vae)
-        #         mel, _, waveform = torch_tools.wav_to_fbank(audios, target_length, stft)
-        #         mel = mel.unsqueeze(1).to(device)
-        #         true_latent = unwrapped_vae.get_first_stage_encoding(unwrapped_vae.encode_first_stage(mel))
+                unwrapped_vae = accelerator.unwrap_model(vae)
+                mel, _, waveform = torch_tools.wav_to_fbank(audios, target_length, stft)
+                mel = mel.unsqueeze(1).to(device)
+                true_latent = unwrapped_vae.get_first_stage_encoding(unwrapped_vae.encode_first_stage(mel))
 
-        #         val_loss = accelerator.unwrap_model(model).diffusion_forward(true_latent, text, validation_mode=True)
-        #         total_val_loss += val_loss.detach().float()
-        #         eval_progress_bar.update(1)
+                val_loss = accelerator.unwrap_model(model).diffusion_forward(true_latent, text, validation_mode=True)
+                total_val_loss += val_loss.detach().float()
+                eval_progress_bar.update(1)
 
-        # model.uncondition = args.uncondition
+        model.uncondition = args.uncondition
 
         if accelerator.is_main_process:    
             result = {}
             result["epoch"] = epoch + 1
             result["step"] = completed_steps
             result["train_loss"] = round(total_loss.item() / len(train_dataloader), 4)
-            # result["val_loss"] = round(total_val_loss.item() / len(eval_dataloader), 4)
+            result["val_loss"] = round(total_val_loss.item() / len(eval_dataloader), 4)
             
             sft_epochs -= 1
             # wandb.log(result)
 
-            # result_string = "Epoch: {}, Loss Train: {}, Val: {}\n".format(epoch, result["train_loss"], result["val_loss"])
-            result_string = f"Epoch: {epoch}, Loss Train: {result['train_loss']}" #, Val: {result['val_loss']}\n"
+            result_string = "Epoch: {}, Loss Train: {}, Val: {}\n".format(epoch, result["train_loss"], result["val_loss"])
+
             accelerator.print(result_string)
 
             with open("{}/summary.jsonl".format(args.output_dir), "a") as f:
@@ -633,11 +650,11 @@ def main():
 
             logger.info(result)
             
-            # if result["val_loss"] < best_loss:
-            #     best_loss = result["val_loss"]
-            #     save_checkpoint = True
-            # else:
-            #     save_checkpoint = False
+            if result["val_loss"] < best_loss:
+                best_loss = result["val_loss"]
+                save_checkpoint = True
+            else:
+                save_checkpoint = False
             save_checkpoint = True
         if args.with_tracking:
             accelerator.log(result, step=completed_steps)
