@@ -7,21 +7,17 @@ import argparse
 import soundfile as sf
 import wandb
 from tqdm import tqdm
-print("1")
 from diffusers import DDPMScheduler
 from audioldm_eval import EvaluationHelper
-print("2")
 from models import build_pretrained_models, AudioDiffusion
-print("3")
 from transformers import AutoProcessor, ClapModel
 import torchaudio
 from tools.torch_tools import read_wav_file
 from tango import Tango
 import numpy as np
 import librosa
-print("4")
-# import laion_clap
-print("5")
+import laion_clap
+import os
 
 def clap_score_computation(wav_output_dir,text_prompts):
     
@@ -106,9 +102,8 @@ def parse_args():
     return args
 
 def main():
-    print("Here 1")
     args = parse_args()
-    print("Here 2")
+
     train_args = dotdict(json.loads(open(args.original_args).readlines()[0]))
     if "hf_model" not in train_args:
         train_args["hf_model"] = None
@@ -172,25 +167,28 @@ def main():
     for j, wav in enumerate(all_outputs):
         sf.write("{}/output_{}.wav".format(output_dir, j), wav, samplerate=16000)
     
-    # clap_score = clap_score_computation(output_dir, text_prompts)
+    clap_score = clap_score_computation(output_dir, text_prompts)
     
 
     result = evaluator.main(output_dir, args.test_references)
     result["Steps"] = num_steps
     result["Guidance Scale"] = guidance
     result["Test Instances"] = len(text_prompts)
-    # result["Clap Score"] =  np.round(clap_score,2)
+    result["Clap Score"] =  np.round(clap_score,2)
     wandb.log(result)
     
     result["scheduler_config"] = dict(scheduler.config)
     result["args"] = dict(vars(args))
     result["output_dir"] = output_dir
-    
-    # with open("outputs/summary.jsonl", "a") as f:
-    #     f.write(json.dumps(result) + "\n\n")
 
-    with open("ckpts/summary.jsonl", "a") as f:
+    
+    os.makedirs("outputs", exist_ok=True)
+    
+    with open("outputs/summary.jsonl", "a") as f:
         f.write(json.dumps(result) + "\n\n")
+
+    # with open("ckpts/summary.jsonl", "a") as f:
+    #     f.write(json.dumps(result) + "\n\n")
         
             
     
