@@ -186,8 +186,8 @@ def main():
     result["args"] = dict(vars(args))
     result["output_dir"] = output_dir
     
-    with open("outputs/summary.jsonl", "a") as f:
-        f.write(json.dumps(result) + "\n\n")
+    # with open("outputs/summary.jsonl", "a") as f:
+    #     f.write(json.dumps(result) + "\n\n")
 
     with open("ckpts/summary.jsonl", "a") as f:
         f.write(json.dumps(result) + "\n\n")
