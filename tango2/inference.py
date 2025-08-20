@@ -130,7 +130,7 @@ def main():
     # ckpt_path = "ckpts/best/model_2.safetensors"
     
     # `load_file` returns a dict that mimics what torch.save would have produced
-    state_dict = load_file((args.model)
+    state_dict = load_file(args.model)
     model.load_state_dict(state_dict)
     ###########################################3
     scheduler = DDPMScheduler.from_pretrained(train_args.scheduler_name, subfolder="scheduler")
