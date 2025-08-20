@@ -102,8 +102,9 @@ def parse_args():
     return args
 
 def main():
+    print("Here 1")
     args = parse_args()
-    
+    print("Here 2")
     train_args = dotdict(json.loads(open(args.original_args).readlines()[0]))
     if "hf_model" not in train_args:
         train_args["hf_model"] = None
