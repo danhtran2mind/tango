@@ -28,4 +28,4 @@ tqdm==4.67.1
 wandb==0.20.1
 ipython==7.34.0
 git+https://github.com/danhtran2mind/ssr_eval.git
-laion-clap==1.1.5
+laion-clap==1.1.7
