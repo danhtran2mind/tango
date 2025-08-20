@@ -123,8 +123,16 @@ def main():
     
     # Load Trained Weight #
     device = vae.device()
-    model.load_state_dict(torch.load(args.model))
+    # model.load_state_dict(torch.load(args.model))
+    ##########################3
+    from safetensors.torch import load_file   # <-- this is the key import
+
+    # ckpt_path = "ckpts/best/model_2.safetensors"
     
+    # `load_file` returns a dict that mimics what torch.save would have produced
+    state_dict = load_file((args.model)
+    model.load_state_dict(state_dict)
+    ###########################################3
     scheduler = DDPMScheduler.from_pretrained(train_args.scheduler_name, subfolder="scheduler")
     evaluator = EvaluationHelper(16000, "cuda:0")
     
