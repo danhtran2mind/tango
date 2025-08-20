@@ -435,7 +435,7 @@ def main():
         # train_dataset = DPOText2AudioDataset(raw_dataset_train, prefix, 'prompt', 'chosen', 'rejected', args.num_examples)
         train_dataset = DPOText2AudioDataset(dataset["train"] , prefix, 'prompt', 'chosen', 'rejected', args.num_examples)
         # eval_dataset = Text2AudioDataset(raw_dataset_valid_test["validation"], prefix, text_column, audio_column, args.num_examples)
-        eval_dataset = Text2AudioDataset(dataset ["validation"], prefix, 'prompt', 'chosen', 'rejected', args.num_examples)
+        eval_dataset = Text2AudioDataset(dataset["validation"], prefix, 'prompt', 'chosen', 'rejected', args.num_examples)
         test_dataset = Text2AudioDataset(raw_dataset_valid_test["test"], prefix, text_column, audio_column, args.num_examples)
 
     accelerator.print("Num instances in train: {}, validation: {}, test: {}".format(
