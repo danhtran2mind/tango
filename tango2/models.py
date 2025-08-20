@@ -264,47 +264,88 @@ class AudioDiffusion(nn.Module):
         latents = latents * inference_scheduler.init_noise_sigma
         return latents
 
+    # def encode_text_classifier_free(self, prompt, num_samples_per_prompt):
+    #     device = self.text_encoder.device
+    #     batch = self.tokenizer(
+    #         prompt, max_length=self.tokenizer.model_max_length, padding=True, truncation=True, return_tensors="pt"
+    #     )
+    #     input_ids, attention_mask = batch.input_ids.to(device), batch.attention_mask.to(device)
+
+    #     with torch.no_grad():
+    #         prompt_embeds = self.text_encoder(
+    #             input_ids=input_ids, attention_mask=attention_mask
+    #         )[0]
+                
+    #     prompt_embeds = prompt_embeds.repeat_interleave(num_samples_per_prompt, 0)
+    #     attention_mask = attention_mask.repeat_interleave(num_samples_per_prompt, 0)
+
+    #     # get unconditional embeddings for classifier free guidance
+    #     uncond_tokens = [""] * len(prompt)
+
+    #     max_length = prompt_embeds.shape[1]
+    #     uncond_batch = self.tokenizer(
+    #         uncond_tokens, max_length=max_length, padding="max_length", truncation=True, return_tensors="pt",
+    #     )
+    #     uncond_input_ids = uncond_batch.input_ids.to(device)
+    #     uncond_attention_mask = uncond_batch.attention_mask.to(device)
+
+    #     with torch.no_grad():
+    #         negative_prompt_embeds = self.text_encoder(
+    #             input_ids=uncond_input_ids, attention_mask=uncond_attention_mask
+    #         )[0]
+                
+    #     negative_prompt_embeds = negative_prompt_embeds.repeat_interleave(num_samples_per_prompt, 0)
+    #     uncond_attention_mask = uncond_attention_mask.repeat_interleave(num_samples_per_prompt, 0)
+
+    #     # For classifier free guidance, we need to do two forward passes.
+    #     # We concatenate the unconditional and text embeddings into a single batch to avoid doing two forward passes
+    #     prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds])
+    #     prompt_mask = torch.cat([uncond_attention_mask, attention_mask])
+    #     boolean_prompt_mask = (prompt_mask == 1).to(device)
+
+    #     return prompt_embeds, boolean_prompt_mask
+
     def encode_text_classifier_free(self, prompt, num_samples_per_prompt):
         device = self.text_encoder.device
         batch = self.tokenizer(
             prompt, max_length=self.tokenizer.model_max_length, padding=True, truncation=True, return_tensors="pt"
         )
         input_ids, attention_mask = batch.input_ids.to(device), batch.attention_mask.to(device)
-
+    
+        # Repeat for classifier-free guidance
+        input_ids = input_ids.repeat_interleave(num_samples_per_prompt, dim=0)
+        attention_mask = attention_mask.repeat_interleave(num_samples_per_prompt, dim=0)
+    
         with torch.no_grad():
-            prompt_embeds = self.text_encoder(
-                input_ids=input_ids, attention_mask=attention_mask
-            )[0]
-                
-        prompt_embeds = prompt_embeds.repeat_interleave(num_samples_per_prompt, 0)
-        attention_mask = attention_mask.repeat_interleave(num_samples_per_prompt, 0)
-
-        # get unconditional embeddings for classifier free guidance
+            # Use only the T5 encoder
+            prompt_embeds = self.text_encoder.encoder(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                return_dict=True
+            ).last_hidden_state
+    
+        # Get unconditional embeddings for classifier-free guidance
         uncond_tokens = [""] * len(prompt)
-
         max_length = prompt_embeds.shape[1]
         uncond_batch = self.tokenizer(
-            uncond_tokens, max_length=max_length, padding="max_length", truncation=True, return_tensors="pt",
+            uncond_tokens, max_length=max_length, padding="max_length", truncation=True, return_tensors="pt"
         )
         uncond_input_ids = uncond_batch.input_ids.to(device)
         uncond_attention_mask = uncond_batch.attention_mask.to(device)
-
+    
         with torch.no_grad():
-            negative_prompt_embeds = self.text_encoder(
-                input_ids=uncond_input_ids, attention_mask=uncond_attention_mask
-            )[0]
-                
-        negative_prompt_embeds = negative_prompt_embeds.repeat_interleave(num_samples_per_prompt, 0)
-        uncond_attention_mask = uncond_attention_mask.repeat_interleave(num_samples_per_prompt, 0)
-
-        # For classifier free guidance, we need to do two forward passes.
-        # We concatenate the unconditional and text embeddings into a single batch to avoid doing two forward passes
+            negative_prompt_embeds = self.text_encoder.encoder(
+                input_ids=uncond_input_ids,
+                attention_mask=uncond_attention_mask,
+                return_dict=True
+            ).last_hidden_state
+    
+        # Concatenate unconditional and conditional embeddings
         prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds])
         prompt_mask = torch.cat([uncond_attention_mask, attention_mask])
         boolean_prompt_mask = (prompt_mask == 1).to(device)
-
+    
         return prompt_embeds, boolean_prompt_mask
-
 
 import yaml
 import random
