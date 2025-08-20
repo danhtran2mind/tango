@@ -7,9 +7,12 @@ import argparse
 import soundfile as sf
 import wandb
 from tqdm import tqdm
+print("1")
 from diffusers import DDPMScheduler
 from audioldm_eval import EvaluationHelper
+print("2")
 from models import build_pretrained_models, AudioDiffusion
+print("3")
 from transformers import AutoProcessor, ClapModel
 import torchaudio
 from tools.torch_tools import read_wav_file
